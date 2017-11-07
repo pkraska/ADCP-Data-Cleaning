@@ -1,0 +1,5 @@
+install.packages("readr")
+library("readr")
+library("tidyr")
+library("dplyr")
+data <- read.csv("data.csv", header = FALSE)
