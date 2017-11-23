@@ -7,19 +7,35 @@
 library("readr")
 library("tidyr")
 library("dplyr")
-library("reshape2")
+library("tibble")
 
 # Read csv file of data into R
 data <- read_csv("data.csv", col_names = FALSE)
 
+# Get just data
+df <- data %>%
+  filter(is.na(data[ ,1]))
+df <- df[-1, ]
+df <- df[ ,-1]
+
 # Get header information from file
 header <- data %>%
   filter(!is.na(data[,1])) %>%
-  mutate(head = rep((1:(nrow(header)/6)), each = 6))
+  mutate(ens = rep(1:(nrow(header)/6), each = 6)) %>%
+  group_by(ens) %>%
+  t %>%
+  as.vector %>%
+  enframe %>%
+  spread(name, value)
 
-for (i in 1:(nrow(header)/6)) {
-  row.head <- header[header$head == i,] %>%
-    toString()
+# remove blank columns
+# c.head <- c.head[, c(-14,-15)]
+n.head <- nrow(header)/6
+row.head <- matrix(rep(NA, each = 21738*15), nrow = 3623)
+c.head <- NA
+for (i in 1:n.head) {
+  row.head[i] <- header[header$ens == i,]
+  c.head[i,] <- cbind(header[header$ens == i,][1,], header[header$ens == i,][2,])
 }
 
 mat.head <- as.matrix(header)
