@@ -1,18 +1,18 @@
 # Check is all packages required are installed, if not, will install
-list.of.packages <- c("readr", "tidyr", "dplyr", "svMisc")
+list.of.packages <- c("tidyverse")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
-library("readr")
-library("tidyr")
-library("dplyr")
-library("tibble")
+library(tidyverse)
 
 # Show working directory to make sure you're in the right folder
 getwd()
 
 # List TXT files in the working directory
-file.list <- list.files(pattern = "*.TXT")
+file.list <- list.files(path = "C:/Users/kraskape/Documents/R/Projects/SMCRobinson/", pattern = "*.TXT", full.names = TRUE)
+
+file.name <- list.files(path = "C:/Users/kraskape/Documents/R/Projects/SMCRobinson/", pattern = "*.TXT") %>%
+  substr(., 1, nchar(.) - 4)
 
 pb <- txtProgressBar(min = 0, max = length(list.files), initial = 0, style =3) 
 pb1 <- txtProgressBar(min = 0, max = 14, initial = 0, style = 3)
@@ -37,6 +37,15 @@ setTxtProgressBar(pb1, 3)
   # read data as text file, creating a character column for data, then removing the first two blank rows
   tab <- suppressMessages(read_table(file.list[i], col_names = FALSE)) %>%
     slice(3:n())
+  
+  ADCP_setup <- tab[1,] %>%
+    separate(X1, into = paste("x",c(1:7), sep = "."), sep = "\\s+") %>%
+    as.data.frame(.)
+is.data.frame(ADCP_setup)
+
+# Pull ADCP setup information from ASC file, and save to file in project directory, "____ADCP_SETUP.CSV"
+    colnames(ADCP_setup) <- c("Depth cell length (cm)", "Blank after transmit (cm)", "ADCP depth from configuration node (cm)", "Number of depth cells", "Number of pings per ensemble", "Time per ensemble (hundredths of the seconds)", "Profiling mode")
+write_csv(ADCP_setup, paste(file.name, "ADCP_SETUP.csv", sep = ""))
   
 setTxtProgressBar(pb1, 4)
   
@@ -70,7 +79,7 @@ setTxtProgressBar(pb1, 7)
     t %>%
     as.vector %>%
     enframe %>%
-    spread(name, value)
+    spread(name, value) 
 
 setTxtProgressBar(pb1, 8)
   
@@ -82,9 +91,9 @@ setTxtProgressBar(pb1, 8)
     as.data.frame %>%
     mutate(ens = as.factor(V84)) %>%
     select(1:22, 28:33, 42:47, 56:61, 71, 72, ens) %>%
-    mutate(cm = "cm") %>%
-    mutate(BT = "BT") %>%
-    mutate(counts = "counts")
+    mutate(cm = "cm", BT = "BT", counts = "counts")%>%
+    select(-14, -23, -29, -35, -43)
+
   
 setTxtProgressBar(pb1, 9)
   
