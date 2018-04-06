@@ -42,6 +42,14 @@ header <- select(header, -22:-26, -32:-39, -45:-52, -58:-65, -72:-78) %>%
          hour = v4,
          minute = v5,
          second = v6,
+         hth_second = v7,
+         ens_number = v8,
+         ens_in_segment = v9,
+         pitch = v10,
+         roll = v11,
+         cor_heading = v12,
+         adcp_temp = v13,
+         
          latitude = v40,
          longitude = v41)
 
