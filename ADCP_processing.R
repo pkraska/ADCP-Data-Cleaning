@@ -23,8 +23,8 @@ df.header <- tab %>%
   select(char) %>%
   separate(char, into = paste("x",c(1:13), sep = "."), sep = "\\s+")
 
-# Consolidate header information from 6 rows into 1 using cbind
-header <- df.header[seq(from = 1, to = nrow(df.header), by = 6),] %>%
+# Consolidate header information from 6 rows into 1 using cbind (column bind)
+header.long <- df.header[seq(from = 1, to = nrow(df.header), by = 6),] %>%
   cbind(df.header[seq(from = 2, to = nrow(df.header), by = 6),]) %>%
   cbind(df.header[seq(from = 3, to = nrow(df.header), by = 6),]) %>%
   cbind(df.header[seq(from = 4, to = nrow(df.header), by = 6),]) %>%
@@ -32,10 +32,11 @@ header <- df.header[seq(from = 1, to = nrow(df.header), by = 6),] %>%
   cbind(df.header[seq(from = 6, to = nrow(df.header), by = 6),]) 
 
 # rename column names as they copied the same names each time in previous step
-colnames(header) <- paste("v", seq(from = 1, to = ncol(header), by = 1), sep = "")
+colnames(header.long) <- paste("v", seq(from = 1, to = ncol(header), by = 1), sep = "")
 
 # Remove blank columns, and rename columns to human readable format
-header <- select(header, -22:-26, -32:-39, -45:-52, -58:-65, -72:-78) %>%
+header <- header.long %>%
+  select(-22:-26, -32:-39, -45:-52, -58:-65, -72:-78) %>%
   rename(year = v1,
          month = v2,
          day = v3,
@@ -51,16 +52,13 @@ header <- select(header, -22:-26, -32:-39, -45:-52, -58:-65, -72:-78) %>%
          adcp_temp = v13,
          
          latitude = v40,
-         longitude = v41)
+         longitude = v41) %>%
+  write_csv("ADCP_HEADER.csv")
 
 # Filter data into df.data remove header column, and separate char into columns
 df.data <- tab %>%
   filter(header == FALSE) %>%
   select(char) %>%
   slice(2:n()) %>%
-  separate(char, into = paste("x",c(1:9), sep = "."), sep = "\\s+")
-
-
-# write.table(tab, file = "data.csv", sep = "", col.names = FALSE, row.names = FALSE)
-
-# tab.read <-  read_csv("data.csv")
+  separate(char, into = paste("x",c(1:9), sep = "."), sep = "\\s+") %>%
+  write_csv("ADCP_DATA.csv")
