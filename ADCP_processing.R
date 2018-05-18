@@ -9,13 +9,26 @@ data <- data[-1:-2]
 # create logical vector of whether or not the row is part of the header or not
 header.rows <- substr(data, 0, 1) != " "
 
-# read data as text file, creating a character column for data, then removing the first two blank rows
+# read data as text file, creating a character column for data, then removing the first two blank 
+# rows
 tab <- read_table("data.txt", col_names = FALSE) %>%
   slice(3:n())
 
 # Add header.rows information to data so we can eventually filter by column
 tab$header <- header.rows
 colnames(tab) <- c("char", "header")
+
+# use rle (Run Length Encoding) function from base r in order to figure out the ID of each ensemble
+tab.rle <- rle(tab$header)
+
+# create dataframe of the length and header/data sections. TRUE = header, FALSE = data, remove first
+# row, and filter to only lengths of actual data
+df.rle <- data.frame(lengths = unlist(tab.rle$lengths), values = unlist(tab.rle$values)) %>%
+  slice(2:n()) %>%
+  filter(values == FALSE)
+
+# create a reference for which header information UID is needed to be pasted to each data row
+UID.ref <- rep(1:length(df.rle$lengths), df.rle$lengths)
 
 # Filter data into df.header remove header column, and separate char into columns
 df.header <- tab %>%
@@ -32,7 +45,7 @@ header.long <- df.header[seq(from = 1, to = nrow(df.header), by = 6),] %>%
   cbind(df.header[seq(from = 6, to = nrow(df.header), by = 6),]) 
 
 # rename column names as they copied the same names each time in previous step
-colnames(header.long) <- paste("v", seq(from = 1, to = ncol(header), by = 1), sep = "")
+colnames(header.long) <- paste("v", seq(from = 1, to = ncol(header.long), by = 1), sep = "")
 
 # Remove blank columns, and rename columns to human readable format
 header <- header.long %>%
@@ -53,6 +66,8 @@ header <- header.long %>%
          
          latitude = v40,
          longitude = v41) %>%
+  mutate(UID = paste(year, month, day, hour, second,hth_second, sep =".")) %>%
+  select(UID, everything()) %>%
   write_csv("ADCP_HEADER.csv")
 
 # Filter data into df.data remove header column, and separate char into columns
@@ -61,4 +76,6 @@ df.data <- tab %>%
   select(char) %>%
   slice(2:n()) %>%
   separate(char, into = paste("x",c(1:9), sep = "."), sep = "\\s+") %>%
+  mutate(UID = header$UID[UID.ref]) %>%
+  select(UID, everything()) %>%
   write_csv("ADCP_DATA.csv")
