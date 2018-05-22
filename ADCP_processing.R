@@ -5,14 +5,15 @@ ADCPproc <- function(x, unit = "RiverRay") {
   # data. RiverRay is the current default as it was the first data used to create
   # this script.
   
+  require(tidyverse)
+    
+  # read data as rows of characters
+  data <- readLines(x)
+    
+  # remove first two empty rows
+  data <- data[-1:-2]
+    
   if (unit == "RiverRay") {
-    require(tidyverse)
-    
-    # read data as rows of characters
-    data <- readLines(x)
-    
-    # remove first two empty rows
-    data <- data[-1:-2]
     
     # create logical vector of whether or not the row is part of the header or not
     header.rows <- substr(data, 0, 1) != " "
