@@ -6,21 +6,40 @@ ADCPproc <- function(x, unit = "RiverRay") {
   # this script.
   
   require(tidyverse)
-    
+
+  x <- "vr065_553.adcp"    
+  
   # read data as rows of characters
-  data <- readLines(x)
-    
-  # remove first two empty rows
-  data <- data[-1:-2]
-    
-  if (unit == "RiverRay") {
+  data <- data.frame(readLines(x))
+  
+  # Header rows are identified by the 'cm' and 'BT' in the character strings.
+  # RiverRay header is 6 lines, while the COERS ADCP is 5.
+  header <- regexpr("[a-z]+", data[[1]]) > 0
+  
+  data$header <- header
+
+  # Loop over the dataframe looking for the head == TRUE and then change the previous 4 header items to TRUE as well.
+  for (i in 1:length(data$header)){
+    if(data$header[i] == TRUE){
+      data$header[(i-4):i] <- TRUE
+    } 
+  }
+
+
+  header.rle <- unlist(rle(data$header)$lengths)
+  header.logical <- unlist(rle(data$header)$values)
+
+  header <- data.frame(header.rle, header.logical)
+  rownames(header) <- NULL
+  
+   if (unit == "RiverRay") {
     
     # create logical vector of whether or not the row is part of the header or not
-    header.rows <- substr(data, 0, 1) != " "
+    # header.rows <- substr(data, 0, 1) != " "
     
     # read data as text file, creating a character column for data, then removing the
     # first two blank rows
-    tab <- read_table(x, col_names = FALSE) %>% slice(3:n())
+    tab <- read_table(x, col_names = FALSE)
     
     # Add header.rows information to data so we can eventually filter by column
     tab$header <- header.rows
@@ -85,7 +104,11 @@ ADCPproc <- function(x, unit = "RiverRay") {
       mutate(UID = header$UID[UID.ref]) %>% 
       select(UID, everything()) %>% 
       write_csv("ADCP_DATA.csv")
-  } else {
+  } 
+  if (unit == "COERS") {
+    
+    }
+  else {
     message("Haven't finished writing script yet for other Teledyne ADCP units.")
   }
   
