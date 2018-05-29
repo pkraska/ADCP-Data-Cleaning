@@ -1,4 +1,4 @@
-# Function to process ADCP data into two flat files (header/data)
+# Function t o process ADCP data into two flat files (header/data)
 
 # x <- "vr065_553.adcp"
 # x <- 'data.txt'
