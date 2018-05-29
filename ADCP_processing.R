@@ -1,5 +1,9 @@
 # Function to process ADCP data into two flat files (header/data)
-x <- "vr065_553.adcp" 
+
+# x <- "vr065_553.adcp"
+# x <- 'data.txt'
+# unit = 'COERS'
+# unit = 'RiverRay'
 
 ADCPproc <- function(x, unit = "RiverRay") {
   # x is the data you wish to process unit is the type of unit you used to collect
@@ -9,12 +13,14 @@ ADCPproc <- function(x, unit = "RiverRay") {
   require(tidyverse)
   require(data.table)
 
-  # read data as rows of characters
-    data <- readLines(x) %>%
+  # read data as rows of characters and rename columns
+  # SUPPRESSED WARNING ABOUT EXPECTED 13 PIECES, header rows have less columns than if 
+  # the data was rectangular, NAs used to fill gaps
+    data <- suppressWarnings(readLines(x) %>%
     trimws(., which = 'both') %>%
     data.table(.) %>%
     select(read = 1) %>%
-    separate(read, into = paste("V", c(1:13), sep = ""), sep = "\\s+")
+    separate(read, into = paste("V", c(1:13), sep = ""), sep = "\\s+"))
     
   
   # Header rows are identified by the 'cm' and 'BT' in the character strings.
@@ -32,18 +38,19 @@ ADCPproc <- function(x, unit = "RiverRay") {
         header[i] <- FALSE
       }
     }
-  }
-  
-  data$header <- header
-  
+    data$header <- header
+  } 
   if (unit == "RiverRay") {
-    for (i in 1:length(data$header)) {
-      if (data$header[i] == TRUE) {
-        data$header[(i - 5):i] <- TRUE
+      for (i in 1:length(header)) {
+        if (regex.header[i] == TRUE) {
+          header[(i - 5):i] <- TRUE
+        } else {
+          header[i] <- FALSE
+        }
       }
+    data$header <- header
     }
-  }
-  
+    
   # Create data frame of RLE (run length encoding) of the TRUE/FALSE header for the
   # length of each TRUE/FALSE section and trim off the first FALSE as it is part of
   # discarded data
@@ -57,7 +64,8 @@ ADCPproc <- function(x, unit = "RiverRay") {
     slice(4:n()) %>%
     filter(header == FALSE) %>%
     mutate(UID = UID.ref) %>%
-    select(UID, everything()) 
+    select(UID, everything()) %>%
+    write_csv("ADCP_DATA.csv") 
   
   ensemble.header.data <- data %>%
     slice(4:n()) %>%
@@ -92,7 +100,7 @@ ADCPproc <- function(x, unit = "RiverRay") {
              adcp_temp = v13) %>% 
       mutate(UID = paste(year, month, day, hour, second, hth_second, sep = ".")) %>% 
       select(UID, everything()) %>% 
-      write_csv("ADCP_HEADER.csv")
+      write_csv("ADCP_HEADER.csv") 
   }
   
   if (unit == "RiverRay") {
@@ -102,6 +110,10 @@ ADCPproc <- function(x, unit = "RiverRay") {
       cbind(ensemble.header.data[seq(from = 4, to = nrow(ensemble.header.data), by = 6), ]) %>% 
       cbind(ensemble.header.data[seq(from = 5, to = nrow(ensemble.header.data), by = 6), ]) %>%
       cbind(ensemble.header.data[seq(from = 6, to = nrow(ensemble.header.data), by = 6), ])
+    
+    # rename column names as they copied the same names each time in previous step
+    colnames(ensemble.header) <- paste("v", seq(from = 1, to = ncol(ensemble.header), 
+                                                by = 1), sep = "")
     
     ensemble.header.clean <- ensemble.header %>% 
       select(-22:-26, -32:-39, -45:-52, -58:-65, -72:-78) %>%
@@ -125,5 +137,5 @@ ADCPproc <- function(x, unit = "RiverRay") {
       select(UID, everything()) %>% 
       write_csv("ADCP_HEADER.csv")
   }
-
+cat(paste("Created 'ADCP_DATA.csv' and 'ADCP_HEADER.csv' in ", getwd(), sep = ""))
 }
